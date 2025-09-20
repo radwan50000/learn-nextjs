@@ -300,3 +300,196 @@ const ButtonOne = ({icon , text , action} : {icon: string , text: string , actio
 export default ButtonOne;
 
 ```
+
+## Debugging Next.js `searchParams` in Forms
+
+### Problem Description
+User tried to create a search bar form in Next.js App Router. The form updates the URL with `?query=...`, but the `query` prop passed to `HomeHeader` was always empty.
+
+---
+
+### Conversation
+
+**Assistant:**  
+Ahh okay ✅ now it’s clearer:  
+
+- The URL **is updating correctly** → `/?query=hello`.  
+- But `HomeHeader` still always gets `''` instead of `"hello"`.  
+
+That means the problem is in how you’re typing/using `searchParams`.  
+
+---
+
+### 🚨 The issue
+In your `HomeHeader` you did:
+
+```tsx
+const HomeHeader = ({searchParams}: {searchParams: {query?: string}}) => {
+  const query = searchParams?.query || '';
+  ...
+}
+```
+
+But your `HomeHeader` is **not a page component** — it’s just a child inside `page.tsx`.  
+👉 Only `page.tsx` (or a layout) gets the real `searchParams` from Next.js.  
+
+So when you use `HomeHeader` directly, it doesn’t automatically receive `searchParams`. That’s why it’s always empty.
+
+---
+
+### ✅ Fix
+Pass the searchParams down from your `page.tsx`:
+
+**`app/page.tsx`**
+```tsx
+import HomeHeader from "./HomeHeader";
+
+export default function Page({ searchParams }: { searchParams: { query?: string } }) {
+  return <HomeHeader searchParams={searchParams} />;
+}
+```
+
+**`app/HomeHeader.tsx`**
+```tsx
+import SearchBar from "@/app/components/SearchBar";
+import YellowHeaderBar from "@/app/components/YellowHeaderBar";
+import BlackHeaderBar from "@/app/components/BlackHeaderBar";
+import bgImg from '@/public/bg.png';
+
+const HomeHeader = ({ searchParams }: { searchParams: { query?: string } }) => {
+  const query = searchParams?.query || '';
+
+  return (
+    <header
+      className="w-full h-fit py-16 flex items-center justify-center flex-col bg-pink-600
+                 max-sm:gap-4 sm:gap-4 md:gap-4 lg:gap-8"
+      style={{ backgroundImage: `url("${bgImg.src}")` }}
+    >
+      <YellowHeaderBar text={'Pitch, Vote, and Grow'} />
+      <BlackHeaderBar text={<p>Pitch Your Startup,<br/>Connect with Entrepreneurs</p>} />
+      <p className="text-white font-medium text-center max-w-10/12 max-sm:text-sm sm:text-sm lg:text-2xl">
+        Submit Ideas, Vote on Pitches, and Get Noticed in Virtual Competitions
+      </p>
+      <SearchBar query={query} />
+    </header>
+  );
+};
+
+export default HomeHeader;
+```
+
+---
+
+### 🔑 Why this works
+- Next.js only injects `searchParams` into **page** and **layout** components.  
+- Child components (like `HomeHeader`) won’t magically get it — you must pass it down as props.  
+
+---
+
+**User:**  
+this is work thank you but why the page is the one can take the params of the page and the HomeHeader is not ???
+
+**Assistant:**  
+Great 🎉 glad it’s working now!  
+
+Here’s **why only `page.tsx` (and `layout.tsx`) get `searchParams` directly**, but not `HomeHeader`:  
+
+---
+
+### 🔑 How Next.js App Router works
+- In the **App Router**, Next.js looks at files in the `app/` tree.  
+- Certain special files get **automatic props from the framework**:
+  - `page.tsx` → receives `{ params, searchParams }`
+  - `layout.tsx` → receives `{ params, children }`
+  - `error.tsx`, `loading.tsx`, `not-found.tsx` → also get special props  
+
+So, when you write:
+
+```tsx
+export default function Page({ searchParams }) {
+  return <HomeHeader searchParams={searchParams} />;
+}
+```
+
+Next.js injects the `searchParams` only here because this file is the **entry point for the route** (`/`).  
+
+---
+
+### Why `HomeHeader` doesn’t get them automatically
+`HomeHeader.tsx` is just a **regular React component**.  
+From Next.js’ perspective it’s the same as if you created a `<Button>` or `<Card>`.  
+It doesn’t know what props to give it, unless *you* pass them down.  
+
+Think of it like this:  
+- Next.js → “I’ll give the page component the query params for this URL.”  
+- You → “Okay, I’ll forward them to my child components if they need them.”  
+
+---
+
+### 📝 Analogy
+It’s like Express.js:
+- The `req` object (with `req.query`) is only given to the **route handler**.
+- If you call another function inside, you need to manually pass `req.query` down.  
+
+---
+
+⚡ So the rule is:  
+- **Pages and layouts** get the automatic props.  
+- **Child components** need you to pass them explicitly.  
+
+---
+
+**User:**  
+is searchParams a keyword in the next refer to the search can be performed by form ?
+
+**Assistant:**  
+Nice question 👍  
+
+No — `searchParams` is **not about forms directly**.  
+It’s simply how **Next.js App Router** exposes the **query string** part of the URL.  
+
+---
+
+### Example
+If the URL is:
+
+```
+/?query=hello&category=ai
+```
+
+Then in a **page.tsx** you can write:
+
+```tsx
+export default function Page({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+  console.log(searchParams);
+  // { query: "hello", category: "ai" }
+}
+```
+
+So `searchParams` is just an object that contains everything after the `?`.
+
+---
+
+### Relation to your form
+Your form works like this:
+
+```html
+<form action="/" method="get">
+  <input name="query" value="hello" />
+  <button type="submit">Search</button>
+</form>
+```
+
+- Submitting makes the browser go to `/ ?query=hello`  
+- Next.js then gives `searchParams = { query: "hello" }` to your `page.tsx`.  
+- From there, you can use it or pass it down to components like your `SearchBar`.
+
+So:  
+- The **form** just updates the URL query string.  
+- Next.js picks up that query string and passes it to you as `searchParams`.  
+
+---
+
+👉 In short:  
+- `searchParams` = Next.js keyword prop for query string params.  
+- It’s not tied to `<form>`, but forms are the easiest way to add query params.  
