@@ -2,6 +2,10 @@
 
 ### Routing in Next Js
 
+### Init Next Project
+
+> Run ``` npx create-next-app@latest ```
+
 > In React you need to install additional react-router package to create routes but next.js is using another thing called ``` File Based Routes ``` this mean the next.js see the folders and the files name and creating routes depend on it
 
 <img
