@@ -496,4 +496,88 @@ So:
 
 👉 In short:  
 - `searchParams` = Next.js keyword prop for query string params.  
-- It’s not tied to `<form>`, but forms are the easiest way to add query params.  
+- It’s not tied to `<form>`, but forms are the easiest way to add query params.
+
+
+
+# 🔐 Protecting Routes in Next.js (App Router)
+
+This guide explains how to protect pages in Next.js so users cannot access them unless signed in.
+
+---
+
+## 1. Using `layout.tsx` for Protected Sections
+
+Best when protecting **multiple related routes** (e.g. `/dashboard/*`).
+
+```tsx
+// app/dashboard/layout.tsx
+import { redirect } from "next/navigation"
+import { getCurrentUser } from "@/lib/auth"  // your auth logic
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect("/login")  // 🚀 send them to login if not signed in
+  }
+
+  return <>{children}</>
+}
+```
+
+👉 Every page in `/dashboard` will now require authentication.
+
+---
+
+## 2. Protecting a Single Page
+
+Check authentication directly in the `page.tsx`.
+
+```tsx
+// app/profile/page.tsx
+import { redirect } from "next/navigation"
+import { getCurrentUser } from "@/lib/auth"
+
+export default async function ProfilePage() {
+  const user = await getCurrentUser()
+  if (!user) redirect("/login")
+
+  return <h1>Welcome {user.name}</h1>
+}
+```
+
+---
+
+## 3. Using Middleware for Early Blocking
+
+Middleware runs before the page loads. Good for **strong security**.
+
+```ts
+// middleware.ts
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("token")
+  const isAuth = Boolean(token)
+
+  if (!isAuth && req.nextUrl.pathname.startsWith("/dashboard")) {
+    return NextResponse.redirect(new URL("/login", req.url))
+  }
+}
+```
+
+---
+
+## ✅ Best Practice Summary
+
+- **Many related pages** → Protect in `layout.tsx`  
+- **Single page** → Check inside `page.tsx`  
+- **Stronger security** → Use `middleware.ts`  
+- **Production apps** often combine **middleware + layout checks** for double safety.
+
