@@ -70,7 +70,7 @@ Feature	@/app/auth (Server)	next-auth/react (Client)
 ⚡ أمثلة عملية
 ### 1️⃣ التحقق من الـ Session في Server Component
 
-```
+```tsx
 
 // app/NavBar.tsx (Server Component)
 import { auth } from "@/app/auth";
@@ -123,7 +123,7 @@ export default function NavAuth({ session }: { session: any }) {
 
 ### 3️⃣ استخدام useSession في الكلاينت مباشرة
 
-```
+```tsx
 
 // app/UserInfo.tsx (Client Component)
 "use client";
@@ -192,7 +192,7 @@ headers was called outside a request scope
 
 > We can simply using form -> the form in Next is sending and runs in the server <br>The Problem is when clicking on the buttons this action is consider as CSR and the action we want to made in the page is SSR here is the problem .<br>Simply we can make form and in it's action we define it's function as SSR and then make the function we want to made this will seperate the button that will live in the page as CSR and the form action is sent to server and runs their as SSR like the following code
 
-```
+```tsx
 'use client';
 
 const Home = () => {
@@ -216,7 +216,7 @@ const Home = () => {
 
 ### NavAuth.tsx Page
 
-```
+```tsx
 
 'use client';
 
@@ -269,7 +269,7 @@ export default function NavAuth ({session} : {session : any}){
 ### ButtonOne.tsx Page
 
 
-```
+```tsx
 
 import Image from 'next/image';
 import {signIn , signOut} from 'next-auth/react';
